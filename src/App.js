@@ -1,7 +1,8 @@
-import logo from './logo.svg';
 import './App.css';
 import {useEffect, useRef, useState} from "react";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
+const label_person = 15;
+
 
 function App() {
   const [video, setVideo] = useState(null);
@@ -11,16 +12,13 @@ function App() {
         if (!video || !canvasRef.current) {
             return;
         }
-        const legendColors = [
-            [255, 255, 255, 0], // transparent
-            [0, 0, 0, 255], // black
-        ];
         let runningMode = "VIDEO";
         const videoHeight = "480px";
         const videoWidth = "640px";
         let webcamRunning = true;
         let poseLandmarker = undefined;
         let imageSegmenter;
+        let poseLandmark;
 
         const createImageSegmenter = async () => {
             const audio = await FilesetResolver.forVisionTasks(
@@ -36,7 +34,6 @@ function App() {
                 outputCategoryMask: true,
                 outputConfidenceMasks: false
             });
-            let labels = imageSegmenter.getLabels();
         };
         await createImageSegmenter();
 
@@ -79,26 +76,35 @@ function App() {
                 lastVideoTime = video.currentTime;
                 poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
                     canvasCtx.save();
-                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-                    for (const landmark of result.landmarks) {
-                        drawingUtils.drawLandmarks(landmark, {
-                            radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
-                        });
-                        drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-                    }
-                    canvasCtx.restore();
+                    //console.log(result);
+                    poseLandmark = result.landmarks;
+                    // canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    // for (const landmark of result.landmarks) {
+                    //     drawingUtils.drawLandmarks(landmark, {
+                    //         radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                    //     });
+                    //     drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+                    // }
+                    // canvasCtx.restore();
                 });
                 imageSegmenter.segmentForVideo(video, startTimeMs, (result) => {
                     let imageData = canvasCtx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
-                    const mask = result.categoryMask.getAsFloat32Array();
+                    const mask = result.categoryMask.getAsUint8Array();
                     let j = 0;
+                    //console.log(imageData);
                     for (let i = 0; i < mask.length; ++i) {
-                        const maskVal = Math.round(mask[i] * 255.0);
-                        const legendColor = legendColors[maskVal % legendColors.length];
-                        imageData[j] = (legendColor[0] + imageData[j]);
-                        imageData[j + 1] = (legendColor[1] + imageData[j + 1]);
-                        imageData[j + 2] = (legendColor[2] + imageData[j + 2]);
-                        imageData[j + 3] = (legendColor[3] + imageData[j + 3]);
+                        if (mask[i] === label_person) {
+                            imageData[j] = 0;
+                            imageData[j + 1] = 0;
+                            imageData[j + 2] = 0;
+                            imageData[j + 3] = 255;
+                        }
+                        else {
+                            imageData[j] = 255;
+                            imageData[j + 1] = 255;
+                            imageData[j + 2] = 255;
+                            imageData[j + 3] = 0;
+                        }
                         j += 4;
                     }
                     const uint8Array = new Uint8ClampedArray(imageData.buffer);
@@ -108,6 +114,12 @@ function App() {
                         video.videoHeight
                     );
                     canvasCtx.putImageData(dataNew, 0, 0);
+                    for (const lm of poseLandmark) {
+                        drawingUtils.drawLandmarks(lm, {
+                            color: '#ffffff',
+                            radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                        });
+                    }
                 });
             }
             //console.log("webcamrunning:",webcamRunning);
@@ -118,7 +130,7 @@ function App() {
     })();}, [video]);
   return (
     <div>
-      <video ref={(ref) => setVideo(ref)} style={{width: "640px", height: "480px", position: "absolute", left: 0, top: 0}} autoPlay
+      <video ref={(ref) => setVideo(ref)} style={{opacity: "0.0", width: "640px", height: "480px", position: "absolute", left: 0, top: 0}} autoPlay
              playsInline />
       <canvas ref={canvasRef} className="output_canvas" width="640" height="480"
             style={{position: "absolute", left: 0, top: 0}} />
