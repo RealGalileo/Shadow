@@ -3,13 +3,18 @@ import {useEffect, useRef, useState} from "react";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
 const label_person = 15;
 
+const shadow1 = new Image();
+let shadowMtx;
+
 
 function App() {
   const [video, setVideo] = useState(null);
   const canvasRef = useRef(null);
+  const shadowRef = useRef(null);
+  const [similarity, setSimilarity] = useState(0);
 
     useEffect(() => {(async function () {
-        if (!video || !canvasRef.current) {
+        if (!video || !canvasRef.current || !shadowRef.current) {
             return;
         }
         let runningMode = "VIDEO";
@@ -52,6 +57,15 @@ function App() {
         };
         await createPoseLandmarker();
 
+        const shadowElement = shadowRef.current;
+        shadow1.onload = () => {
+            const shadowCtx = shadowElement.getContext("2d");
+            shadowCtx.drawImage(shadow1, 0, 0);
+            shadowMtx = shadowCtx.getImageData(0, 0, 640, 480).data;
+            console.log(shadowMtx);
+        }
+        shadow1.src = "/assets/shadow1.png";
+
         const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
         const drawingUtils = new DrawingUtils(canvasCtx);
@@ -91,15 +105,31 @@ function App() {
                     let imageData = canvasCtx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
                     const mask = result.categoryMask.getAsUint8Array();
                     let j = 0;
+                    let samePixel = 0, diffPixel = 0;
                     //console.log(imageData);
                     for (let i = 0; i < mask.length; ++i) {
-                        if (mask[i] === label_person) {
-                            imageData[j] = 0;
+                        if (mask[i] === label_person && shadowMtx[j] === 0) {
+                            imageData[j] = 255;
                             imageData[j + 1] = 0;
                             imageData[j + 2] = 0;
                             imageData[j + 3] = 255;
+                            samePixel++;
                         }
-                        else {
+                        else if (mask[i] !== label_person && shadowMtx[j] === 0) {
+                            imageData[j] = 0;
+                            imageData[j + 1] = 255;
+                            imageData[j + 2] = 0;
+                            imageData[j + 3] = 255;
+                            diffPixel++;
+                        }
+                        else if (mask[i] === label_person && shadowMtx[j] !== 0) {
+                            imageData[j] = 0;
+                            imageData[j + 1] = 0;
+                            imageData[j + 2] = 255;
+                            imageData[j + 3] = 255;
+                            diffPixel++;
+                        }
+                        else{
                             imageData[j] = 255;
                             imageData[j + 1] = 255;
                             imageData[j + 2] = 255;
@@ -107,6 +137,8 @@ function App() {
                         }
                         j += 4;
                     }
+                    setSimilarity(samePixel / (samePixel + diffPixel));
+                    //console.log("similarity",similarity, "diff", diffPixel, "same", samePixel);
                     const uint8Array = new Uint8ClampedArray(imageData.buffer);
                     const dataNew = new ImageData(
                         uint8Array,
@@ -132,8 +164,10 @@ function App() {
     <div>
       <video ref={(ref) => setVideo(ref)} style={{opacity: "0.0", width: "640px", height: "480px", position: "absolute", left: 0, top: 0}} autoPlay
              playsInline />
+      <canvas ref={shadowRef} width="640" height="480" style={{position: "absolute", left: 0, top: 0}}/>
       <canvas ref={canvasRef} className="output_canvas" width="640" height="480"
             style={{position: "absolute", left: 0, top: 0}} />
+      <div style={{position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
     </div>
   );
 }
