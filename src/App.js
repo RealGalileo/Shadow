@@ -1,20 +1,26 @@
 import './App.css';
+import styles from './flip.module.css';
+import {nearestInterpolation} from './changeSize.js';
 import {useEffect, useRef, useState} from "react";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
 const label_person = 15;
 
 const shadow1 = new Image();
 let shadowMtx;
+let shadowColor = [0, 0, 0];
+let windowWidth = 1200, windowHeight = 900;
 const shadowPicNames = [
     {path: "/assets/IMG_8051.mov", type: "video"},
-    {path: "/assets/shadow1.png", type: "pic"},
-    {path: "/assets/shadow2.png", type: "pic"}];
+    {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
+    {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
+    {path: "/assets/shadow3.png", type: "pic"}];
 
 
 function App() {
   const [video, setVideo] = useState(null);
   const canvasRef = useRef(null);
   const shadowRef = useRef(null);
+  const tmpRef = useRef(null);
   const [similarity, setSimilarity] = useState(0);
   const [playProcess, setPlayProcess] = useState(0);
   const [isPicLoaded, setIsPicLoaded] = useState(false);
@@ -77,6 +83,7 @@ function App() {
         const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
         const drawingUtils = new DrawingUtils(canvasCtx);
+        const tmpCtx = tmpRef.current.getContext("2d");
 
         const constraints = {
             video: true
@@ -116,36 +123,51 @@ function App() {
                     let samePixel = 0, diffPixel = 0;
                     //console.log(imageData);
                     for (let i = 0; i < mask.length; ++i) {
-                        if (mask[i] === label_person && shadowMtx[j] === 0) {
+                        let isShadow = (shadowMtx[j] === shadowColor[0] && shadowMtx[j + 1] === shadowColor[1]
+                            && shadowMtx[j + 2] === shadowColor[2])
+                        if (mask[i] === label_person && isShadow) {
                             imageData[j] = 255;
-                            imageData[j + 1] = 0;
-                            imageData[j + 2] = 0;
+                            imageData[j + 1] = 208;
+                            imageData[j + 2] = 208;
                             imageData[j + 3] = 255;
                             samePixel++;
                         }
-                        else if (mask[i] !== label_person && shadowMtx[j] === 0) {
-                            imageData[j] = 0;
-                            imageData[j + 1] = 255;
-                            imageData[j + 2] = 0;
+                        else if (mask[i] !== label_person && isShadow) {
+                            imageData[j] = 58;
+                            imageData[j + 1] = 166;
+                            imageData[j + 2] = 185;
                             imageData[j + 3] = 255;
                             diffPixel++;
                         }
-                        else if (mask[i] === label_person && shadowMtx[j] !== 0) {
-                            imageData[j] = 0;
-                            imageData[j + 1] = 0;
-                            imageData[j + 2] = 255;
+                        else if (mask[i] === label_person && !isShadow) {
+                            imageData[j] = 255;
+                            imageData[j + 1] = 158;
+                            imageData[j + 2] = 170;
                             imageData[j + 3] = 255;
                             diffPixel++;
                         }
                         else{
-                            imageData[j] = 255;
-                            imageData[j + 1] = 255;
-                            imageData[j + 2] = 255;
-                            imageData[j + 3] = 0;
+                            imageData[j] = shadowMtx[j];
+                            imageData[j + 1] = shadowMtx[j + 1];
+                            imageData[j + 2] = shadowMtx[j + 2];
+                            imageData[j + 3] = shadowMtx[j + 3];
                         }
                         j += 4;
                     }
                     setSimilarity(samePixel / (samePixel + diffPixel));
+
+
+                    let imgData = nearestInterpolation(imageData, 640, 480, windowWidth, windowHeight);
+                    const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
+                    // //console.log(imgData.buffer);
+                    const dataNew1 = new ImageData(
+                        uint8Array1,
+                        windowWidth,
+                        windowHeight
+                    );
+                    tmpCtx.putImageData(dataNew1, 0, 0);
+
+
                     //console.log("similarity",similarity, "diff", diffPixel, "same", samePixel);
                     const uint8Array = new Uint8ClampedArray(imageData.buffer);
                     const dataNew = new ImageData(
@@ -192,22 +214,22 @@ function App() {
     }, [playProcess]);
 
     useEffect(() => {
-        if (similarity >= 0.8 && isPicLoaded === true) {
+        if (similarity >= 0.2 && isPicLoaded === true) {
             setIsPicLoaded(false);
-            setPlayProcess(playProcess + 1);
+            setPlayProcess((playProcess + 1) % 6);
         }
     });
   return (
     <div>
       <video ref={(ref) => setVideo(ref)} style={{opacity: "0.0", width: "640px", height: "480px", position: "absolute", left: 0, top: 0}} autoPlay
              playsInline />
-      <canvas ref={shadowRef} width="640" height="480" style={{position: "absolute", left: 0, top: 0}}/>
-      <canvas ref={canvasRef} className="output_canvas" width="640" height="480"
-            style={{position: "absolute", left: 0, top: 0}} />
+      <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
+      <canvas ref={canvasRef} className={styles.flip} width="640" height="480" style={{position: "absolute", left: 0, top: 0}} />
+      <canvas ref={tmpRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: "640px", height: "480px", position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
-            console.log("???", videoSrc);
+            //console.log("???", videoSrc);
             if (videoSrc) {
                 setPlayProcess(playProcess + 1);
             }
