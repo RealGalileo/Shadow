@@ -229,9 +229,9 @@ function App() {
       <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
-      <ReactP5Wrapper sketch={sketch} />
+      <ReactP5Wrapper sketch={sketch} style={{position: "absolute", left: 0, top: 0}} />
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
-      <video src={videoSrc} controls style={{width: "640px", height: "480px", position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
+      <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
             //console.log("???", videoSrc);
             if (videoSrc) {
