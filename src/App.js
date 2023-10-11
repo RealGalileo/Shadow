@@ -1,8 +1,10 @@
 import './App.css';
 import styles from './flip.module.css';
-import {nearestInterpolation} from './changeSize.js';
+import {nearestInterpolation} from './changeSize';
 import {useEffect, useRef, useState} from "react";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
+import { ReactP5Wrapper } from "@p5-wrapper/react";
+import {sketch} from "./sketch";
 const label_person = 15;
 
 const shadow1 = new Image();
@@ -20,7 +22,7 @@ function App() {
   const [video, setVideo] = useState(null);
   const canvasRef = useRef(null);
   const shadowRef = useRef(null);
-  const tmpRef = useRef(null);
+  const fitWindowRef = useRef(null);
   const [similarity, setSimilarity] = useState(0);
   const [playProcess, setPlayProcess] = useState(0);
   const [isPicLoaded, setIsPicLoaded] = useState(false);
@@ -35,7 +37,8 @@ function App() {
         let webcamRunning = true;
         let poseLandmarker = undefined;
         let imageSegmenter;
-        let poseLandmark;
+        let poseLandmark = [];
+        let faceLandmark = [];
 
         const createImageSegmenter = async () => {
             const audio = await FilesetResolver.forVisionTasks(
@@ -82,8 +85,8 @@ function App() {
 
         const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
-        const drawingUtils = new DrawingUtils(canvasCtx);
-        const tmpCtx = tmpRef.current.getContext("2d");
+        const tmpCtx = fitWindowRef.current.getContext("2d");
+        const drawingUtils = new DrawingUtils(tmpCtx);
 
         const constraints = {
             video: true
@@ -105,16 +108,15 @@ function App() {
                 lastVideoTime = video.currentTime;
                 poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
                     canvasCtx.save();
-                    //console.log(result);
+                    console.log(result.landmarks);
                     poseLandmark = result.landmarks;
-                    // canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-                    // for (const landmark of result.landmarks) {
-                    //     drawingUtils.drawLandmarks(landmark, {
-                    //         radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
-                    //     });
-                    //     drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-                    // }
-                    // canvasCtx.restore();
+                    // 0-nose, 2-left eye, 5-right eye, 9-mouth left, 10-mouth right
+                    faceLandmark = [];
+                    if (result.landmarks.length !== 0) {
+                        for (const p of poseLandmark) {
+                            faceLandmark.push([p[0], p[2], p[5], p[9], p[10]]);
+                        }
+                    }
                 });
                 imageSegmenter.segmentForVideo(video, startTimeMs, (result) => {
                     let imageData = canvasCtx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
@@ -169,14 +171,15 @@ function App() {
 
 
                     //console.log("similarity",similarity, "diff", diffPixel, "same", samePixel);
-                    const uint8Array = new Uint8ClampedArray(imageData.buffer);
-                    const dataNew = new ImageData(
-                        uint8Array,
-                        video.videoWidth,
-                        video.videoHeight
-                    );
-                    canvasCtx.putImageData(dataNew, 0, 0);
-                    for (const lm of poseLandmark) {
+                    // const uint8Array = new Uint8ClampedArray(imageData.buffer);
+                    // const dataNew = new ImageData(
+                    //     uint8Array,
+                    //     video.videoWidth,
+                    //     video.videoHeight
+                    // );
+                    // canvasCtx.putImageData(dataNew, 0, 0);
+                    console.log("facelandmark", faceLandmark);
+                    for (const lm of faceLandmark) {
                         drawingUtils.drawLandmarks(lm, {
                             color: '#ffffff',
                             radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
@@ -224,8 +227,9 @@ function App() {
       <video ref={(ref) => setVideo(ref)} style={{opacity: "0.0", width: "640px", height: "480px", position: "absolute", left: 0, top: 0}} autoPlay
              playsInline />
       <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
-      <canvas ref={canvasRef} className={styles.flip} width="640" height="480" style={{position: "absolute", left: 0, top: 0}} />
-      <canvas ref={tmpRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
+      <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
+      <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
+      <ReactP5Wrapper sketch={sketch} />
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: "640px", height: "480px", position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
