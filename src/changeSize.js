@@ -1,9 +1,9 @@
 export function nearestInterpolation(imgData, pw, ph, fw, fh) {
     let m = Math.min(fw / pw, fh / ph);
     let res = new ImageData(fw, fh).data;
-    for (let i = 0; i < fw; i++) {
-        for (let j = 0; j < fh; j++) {
-            let cor = (Math.floor(i/m) + Math.floor(j/m) * pw) * 4;
+    for (let j = 0; j < fh; j++) {
+        for (let i = 0; i < fw; i++) {
+            let cor = (Math.floor((i - (fw - m * pw) / 2) / m) + Math.floor((j - (fh - m * ph) / 2)/m) * pw) * 4;
             if (i < (fw - m * pw) / 2) {
                 cor = 4 * (Math.floor(j/m) * pw);
             }

@@ -8,7 +8,7 @@ const label_person = 15;
 const shadow1 = new Image();
 let shadowMtx;
 let shadowColor = [0, 0, 0];
-let windowWidth = 1200, windowHeight = 900;
+let windowWidth = window.innerWidth, windowHeight = window.innerHeight;
 const shadowPicNames = [
     {path: "/assets/IMG_8051.mov", type: "video"},
     {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
