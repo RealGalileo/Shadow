@@ -2,20 +2,27 @@ import './App.css';
 import styles from './flip.module.css';
 import {nearestInterpolation} from './changeSize';
 import {useEffect, useRef, useState} from "react";
+import {ProcessControl} from "./ProcessControl";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
 import { ReactP5Wrapper } from "@p5-wrapper/react";
 import {sketch} from "./sketch";
+import {useSound} from 'use-sound';
 const label_person = 15;
 
 const shadow1 = new Image();
 let shadowMtx;
 let shadowColor = [0, 0, 0];
 let windowWidth = window.innerWidth, windowHeight = window.innerHeight;
+let hintSrc = "nohint.png";
 const shadowPicNames = [
     {path: "/assets/IMG_8051.mov", type: "video"},
     {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
     {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
     {path: "/assets/shadow3.png", type: "pic"}];
+let timeID;
+const hint1 = [];
+const hint2 = [];
+const hint3 = [];
 
 
 function App() {
@@ -24,9 +31,40 @@ function App() {
   const shadowRef = useRef(null);
   const fitWindowRef = useRef(null);
   const [similarity, setSimilarity] = useState(0);
-  const [playProcess, setPlayProcess] = useState(0);
+  const [playProcess, setPlayProcess] = useState(new ProcessControl());
   const [isPicLoaded, setIsPicLoaded] = useState(false);
   const [videoSrc, setVideoSrc] = useState(null);
+  const [playHint1] = useSound("/assets/hint1.m4a");
+  //console.log("usestate playprocess", playProcess);
+
+    function startTimer() {
+        console.log("timer start");
+        return setTimeout(() => {
+            console.log("timer callback", playProcess);
+            let isGameOver = false;
+            let newProcess, newhint1, newhint2, newhint3;
+            if (playProcess.mainProcess === 1) {
+                newProcess = 1;
+                newhint1 = playProcess.hint1 + 1;
+                newhint2 = 0;
+                newhint3 = 0;
+            }
+            else if (playProcess.mainProcess === 3) {
+                newProcess = 3;
+                newhint1 = 0;
+                newhint2 = playProcess.hint2 + 1;
+                newhint3 = 0;
+            }
+            else if (playProcess.mainProcess === 5) {
+                newProcess = 1;
+                newhint1 = 0;
+                newhint2 = 0;
+                newhint3 = playProcess.hint3 + 1;
+                }
+            isGameOver = playProcess.hint1 > 2 || playProcess.hint2 > 2 || playProcess.hint3 > 2;
+            setPlayProcess(new ProcessControl(newProcess, newhint1, newhint2, newhint3, isGameOver));
+        }, 15000);
+    }
     useEffect(() => {(async function () {
         if (!video || !canvasRef.current || !shadowRef.current) {
             return;
@@ -108,7 +146,7 @@ function App() {
                 lastVideoTime = video.currentTime;
                 poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
                     canvasCtx.save();
-                    console.log(result.landmarks);
+                    //console.log(result.landmarks);
                     poseLandmark = result.landmarks;
                     // 0-nose, 2-left eye, 5-right eye, 9-mouth left, 10-mouth right
                     faceLandmark = [];
@@ -178,7 +216,7 @@ function App() {
                     //     video.videoHeight
                     // );
                     // canvasCtx.putImageData(dataNew, 0, 0);
-                    console.log("facelandmark", faceLandmark);
+                    //console.log("facelandmark", faceLandmark);
                     for (const lm of faceLandmark) {
                         drawingUtils.drawLandmarks(lm, {
                             color: '#ffffff',
@@ -195,9 +233,10 @@ function App() {
     })();}, [video]);
 
     useEffect(() => {
-        let curObj = shadowPicNames[playProcess];
+        let curObj = shadowPicNames[playProcess.mainProcess];
+        console.log("playprocess", playProcess);
         if (curObj.type === "video") {
-            console.log("video", curObj);
+            //console.log("video", curObj);
             setVideoSrc(curObj.path);
             setIsPicLoaded(false);
         }
@@ -210,16 +249,45 @@ function App() {
                 shadowMtx = shadowCtx.getImageData(0, 0, 640, 480).data;
                 //console.log(shadowMtx);
                 setIsPicLoaded(true);
+                timeID = startTimer();
             }
             shadow1.src = curObj.path;
         }
-
+        if (playProcess.hint1 === 1) {
+            playHint1();
+            console.log("hint1=1");
+        }
+        else if (playProcess.hint1 === 2) {
+            hintSrc = "hint1-2.png";
+            console.log("hint1=2");
+        }
+        else if (playProcess.hint2 === 1) {
+            console.log("hint2=1");
+        }
+        else if (playProcess.hint2 === 2) {
+            hintSrc = "/assets/hint2-2.png";
+            console.log("hint2=2");
+        }
+        else if (playProcess.hint3 === 1) {
+            console.log("hint3=1");
+        }
+        else if (playProcess.hint3 === 2) {
+            hintSrc = "hint3-2.png";
+            console.log("hint3=2");
+        }
+        else if (playProcess.isGameOver) {
+            console.log("gameover");
+        }
+        else if (playProcess.isSuccess) {
+            console.log("success");
+        }
     }, [playProcess]);
 
     useEffect(() => {
         if (similarity >= 0.2 && isPicLoaded === true) {
+            clearTimeout(timeID);
             setIsPicLoaded(false);
-            setPlayProcess((playProcess + 1) % 6);
+            setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
         }
     });
   return (
@@ -229,13 +297,14 @@ function App() {
       <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
+      <img src={hintSrc} width={windowWidth} height={windowHeight} style={{display: !(hintSrc === "nohint.png"), position: "absolute", left: 0, top: 0}}/>
       <ReactP5Wrapper sketch={sketch} style={{position: "absolute", left: 0, top: 0}} />
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
             //console.log("???", videoSrc);
             if (videoSrc) {
-                setPlayProcess(playProcess + 1);
+                setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, playProcess.hint1, playProcess.hint2, playProcess.hint3));
             }
       }}/>
     </div>
