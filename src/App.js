@@ -13,16 +13,16 @@ const shadow1 = new Image();
 let shadowMtx;
 let shadowColor = [0, 0, 0];
 let windowWidth = window.innerWidth, windowHeight = window.innerHeight;
-let hintSrc = "nohint.png";
+let hintSrc = "/assets/nohint.png";
+let shadowWidth = 640, shadowHeight = 480;
 const shadowPicNames = [
-    {path: "/assets/IMG_8051.mov", type: "video"},
-    {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
-    {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/IMG_8051.mov", type: "video"},
+    {path: "/assets/1_introduction.mp4", type: "video"},
+    {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/2_Arch.mp4", type: "video"},
+    {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/3_Seesaw.mp4", type: "video"},
     {path: "/assets/shadow3.png", type: "pic"}];
+const gameOverVideoPath = "/assets/gameover.m4v";
+const gameSuccessVideoPath = "/assets/4_Colony.mp4";
 let timeID;
-const hint1 = [];
-const hint2 = [];
-const hint3 = [];
 
 
 function App() {
@@ -34,7 +34,9 @@ function App() {
   const [playProcess, setPlayProcess] = useState(new ProcessControl());
   const [isPicLoaded, setIsPicLoaded] = useState(false);
   const [videoSrc, setVideoSrc] = useState(null);
-  const [playHint1] = useSound("/assets/hint1.m4a");
+  const [playHint1] = useSound("/assets/hint1.mp3");
+  const [playHint2] = useSound("/assets/hint2.mp3");
+  const [playHint3] = useSound("/assets/hint3.mp3");
   //console.log("usestate playprocess", playProcess);
 
     function startTimer() {
@@ -197,7 +199,7 @@ function App() {
                     setSimilarity(samePixel / (samePixel + diffPixel));
 
 
-                    let imgData = nearestInterpolation(imageData, 640, 480, windowWidth, windowHeight);
+                    let imgData = nearestInterpolation(imageData, shadowWidth, shadowHeight, windowWidth, windowHeight);
                     const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
                     // //console.log(imgData.buffer);
                     const dataNew1 = new ImageData(
@@ -235,44 +237,58 @@ function App() {
     useEffect(() => {
         let curObj = shadowPicNames[playProcess.mainProcess];
         console.log("playprocess", playProcess);
-        if (curObj.type === "video") {
+        if (playProcess.isSuccess) {
+            hintSrc = "/assets/background.png";
+            setVideoSrc(gameSuccessVideoPath);
+            setIsPicLoaded(false);
+        }
+        else if (playProcess.isGameOver) {
+            hintSrc = "/assets/background.png";
+            setVideoSrc(gameOverVideoPath);
+            setIsPicLoaded(false);
+        }
+        else if (curObj.type === "video") {
             //console.log("video", curObj);
+            hintSrc = "/assets/background.png";
             setVideoSrc(curObj.path);
             setIsPicLoaded(false);
         }
         else if (curObj.type === "pic") {
             setVideoSrc(null);
+            hintSrc = "/assets/nohint.png";
             const shadowElement = shadowRef.current;
             shadow1.onload = () => {
                 const shadowCtx = shadowElement.getContext("2d");
                 shadowCtx.drawImage(shadow1, 0, 0);
-                shadowMtx = shadowCtx.getImageData(0, 0, 640, 480).data;
+                shadowMtx = shadowCtx.getImageData(0, 0, shadowWidth, shadowHeight).data;
                 //console.log(shadowMtx);
                 setIsPicLoaded(true);
                 timeID = startTimer();
             }
             shadow1.src = curObj.path;
+            console.log("shadow1.naturalWidth", shadow1.naturalWidth);
         }
         if (playProcess.hint1 === 1) {
             playHint1();
-            console.log("hint1=1");
         }
         else if (playProcess.hint1 === 2) {
-            hintSrc = "hint1-2.png";
+            hintSrc = "/assets/hint1-2.png";
             console.log("hint1=2");
         }
         else if (playProcess.hint2 === 1) {
-            console.log("hint2=1");
+            playHint2();
+            //console.log("hint2=1");
         }
         else if (playProcess.hint2 === 2) {
             hintSrc = "/assets/hint2-2.png";
             console.log("hint2=2");
         }
         else if (playProcess.hint3 === 1) {
-            console.log("hint3=1");
+            playHint3();
+            //console.log("hint3=1");
         }
         else if (playProcess.hint3 === 2) {
-            hintSrc = "hint3-2.png";
+            hintSrc = "/assets/hint3-2.png";
             console.log("hint3=2");
         }
         else if (playProcess.isGameOver) {
@@ -297,7 +313,7 @@ function App() {
       <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
-      <img src={hintSrc} width={windowWidth} height={windowHeight} style={{display: !(hintSrc === "nohint.png"), position: "absolute", left: 0, top: 0}}/>
+      <img src={hintSrc} width={windowWidth} height={windowHeight} style={{display: (hintSrc === "/assets/nohint.png") ? "none" : "block", position: "absolute", left: 0, top: 0}}/>
       <ReactP5Wrapper sketch={sketch} style={{position: "absolute", left: 0, top: 0}} />
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
