@@ -7,13 +7,13 @@ import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@me
 import { ReactP5Wrapper } from "@p5-wrapper/react";
 import {sketch} from "./sketch";
 import {useSound} from 'use-sound';
-const label_person = 15;
 
 const shadow1 = new Image();
+const label_person = 15;
 let shadowMtx;
 let shadowColor = [0, 0, 0];
 let windowWidth = window.innerWidth, windowHeight = window.innerHeight;
-let hintSrc = "/assets/nohint.png";
+let hintSrc = "/assets/background.png";
 let shadowWidth = 640, shadowHeight = 480;
 const shadowPicNames = [
     {path: "/assets/1_introduction.mp4", type: "video"},
@@ -168,16 +168,16 @@ function App() {
                         let isShadow = (shadowMtx[j] === shadowColor[0] && shadowMtx[j + 1] === shadowColor[1]
                             && shadowMtx[j + 2] === shadowColor[2])
                         if (mask[i] === label_person && isShadow) {
-                            imageData[j] = 255;
-                            imageData[j + 1] = 208;
-                            imageData[j + 2] = 208;
+                            imageData[j] = 167;
+                            imageData[j + 1] = 211;
+                            imageData[j + 2] = 151;
                             imageData[j + 3] = 255;
                             samePixel++;
                         }
                         else if (mask[i] !== label_person && isShadow) {
-                            imageData[j] = 58;
-                            imageData[j + 1] = 166;
-                            imageData[j + 2] = 185;
+                            imageData[j] = 0;
+                            imageData[j + 1] = 0;
+                            imageData[j + 2] = 0;
                             imageData[j + 3] = 255;
                             diffPixel++;
                         }
@@ -318,10 +318,12 @@ function App() {
       <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
-            //console.log("???", videoSrc);
-            if (videoSrc) {
-                setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, playProcess.hint1, playProcess.hint2, playProcess.hint3));
-            }
+                   if (playProcess.isGameOver || playProcess.isSuccess) {
+                       window.location.reload();
+                   }
+                   if (videoSrc) {
+                       setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, playProcess.hint1, playProcess.hint2, playProcess.hint3));
+                   }
       }}/>
     </div>
   );
