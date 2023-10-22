@@ -4,8 +4,6 @@ import {nearestInterpolation} from './changeSize';
 import {useEffect, useRef, useState} from "react";
 import {ProcessControl} from "./ProcessControl";
 import {DrawingUtils, FilesetResolver, ImageSegmenter, PoseLandmarker} from "@mediapipe/tasks-vision";
-import { ReactP5Wrapper } from "@p5-wrapper/react";
-import {sketch} from "./sketch";
 import {useSound} from 'use-sound';
 
 const shadow1 = new Image();
@@ -15,6 +13,7 @@ let shadowColor = [0, 0, 0];
 let windowWidth = window.innerWidth, windowHeight = window.innerHeight;
 let hintSrc = "/assets/background.png";
 let shadowWidth = 640, shadowHeight = 480;
+let hintX, hintY, hintM;
 const shadowPicNames = [
     {path: "/assets/1_introduction.mp4", type: "video"},
     {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/2_Arch.mp4", type: "video"},
@@ -58,7 +57,7 @@ function App() {
                 newhint3 = 0;
             }
             else if (playProcess.mainProcess === 5) {
-                newProcess = 1;
+                newProcess = 5;
                 newhint1 = 0;
                 newhint2 = 0;
                 newhint3 = playProcess.hint3 + 1;
@@ -126,7 +125,7 @@ function App() {
         const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
         const tmpCtx = fitWindowRef.current.getContext("2d");
-        const drawingUtils = new DrawingUtils(tmpCtx);
+        //const drawingUtils = new DrawingUtils(tmpCtx);
 
         const constraints = {
             video: true
@@ -168,9 +167,9 @@ function App() {
                         let isShadow = (shadowMtx[j] === shadowColor[0] && shadowMtx[j + 1] === shadowColor[1]
                             && shadowMtx[j + 2] === shadowColor[2])
                         if (mask[i] === label_person && isShadow) {
-                            imageData[j] = 167;
-                            imageData[j + 1] = 211;
-                            imageData[j + 2] = 151;
+                            imageData[j] = 56;
+                            imageData[j + 1] = 118;
+                            imageData[j + 2] = 191;
                             imageData[j + 3] = 255;
                             samePixel++;
                         }
@@ -182,9 +181,9 @@ function App() {
                             diffPixel++;
                         }
                         else if (mask[i] === label_person && !isShadow) {
-                            imageData[j] = 255;
-                            imageData[j + 1] = 158;
-                            imageData[j + 2] = 170;
+                            imageData[j] = 238;
+                            imageData[j + 1] = 147;
+                            imageData[j + 2] = 34;
                             imageData[j + 3] = 255;
                             diffPixel++;
                         }
@@ -200,6 +199,9 @@ function App() {
 
 
                     let imgData = nearestInterpolation(imageData, shadowWidth, shadowHeight, windowWidth, windowHeight);
+                    hintM = Math.min(windowWidth / shadowWidth, windowHeight / shadowHeight);
+                    hintX = (windowWidth - hintM * shadowWidth) / 2;
+                    hintY = (windowHeight - hintM * shadowHeight) / 2;
                     const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
                     // //console.log(imgData.buffer);
                     const dataNew1 = new ImageData(
@@ -207,8 +209,16 @@ function App() {
                         windowWidth,
                         windowHeight
                     );
-                    tmpCtx.putImageData(dataNew1, 0, 0);
-
+                    // for (const lm of faceLandmark) {
+                    //     console.log("lm", lm, lm[0].x, lm[0].y);
+                    //     //let mul = lm[3][0] - lm[4][0];
+                    //     tmpCtx.putImageData(dataNew1, 0, 0);
+                    //     let eye1 = new Image();
+                    //     eye1.onload = () => {
+                    //         tmpCtx.drawImage(eye1, lm[0].x, lm[0].y, eye1.width, eye1.height);
+                    //     };
+                    //     eye1.src = "/assets/eye.png";
+                    // }
 
                     //console.log("similarity",similarity, "diff", diffPixel, "same", samePixel);
                     // const uint8Array = new Uint8ClampedArray(imageData.buffer);
@@ -219,12 +229,12 @@ function App() {
                     // );
                     // canvasCtx.putImageData(dataNew, 0, 0);
                     //console.log("facelandmark", faceLandmark);
-                    for (const lm of faceLandmark) {
-                        drawingUtils.drawLandmarks(lm, {
-                            color: '#ffffff',
-                            radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
-                        });
-                    }
+                    // for (const lm of faceLandmark) {
+                    //     drawingUtils.drawLandmarks(lm, {
+                    //         color: '#ffffff',
+                    //         radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                    //     });
+                    // }
                 });
             }
             //console.log("webcamrunning:",webcamRunning);
@@ -291,16 +301,20 @@ function App() {
             hintSrc = "/assets/hint3-2.png";
             console.log("hint3=2");
         }
-        else if (playProcess.isGameOver) {
-            console.log("gameover");
-        }
-        else if (playProcess.isSuccess) {
-            console.log("success");
-        }
     }, [playProcess]);
 
     useEffect(() => {
-        if (similarity >= 0.2 && isPicLoaded === true) {
+        if (playProcess.mainProcess === 1 && similarity >= 0.3 && isPicLoaded === true) {
+            clearTimeout(timeID);
+            setIsPicLoaded(false);
+            setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
+        }
+        else if (playProcess.mainProcess === 3 && similarity >= 0.2 && isPicLoaded === true) {
+            clearTimeout(timeID);
+            setIsPicLoaded(false);
+            setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
+        }
+        else if (playProcess.mainProcess === 5 && similarity >= 0.15 && isPicLoaded === true) {
             clearTimeout(timeID);
             setIsPicLoaded(false);
             setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
@@ -313,9 +327,8 @@ function App() {
       <canvas ref={shadowRef} width="640" height="480" style={{opacity: "0.0", position: "absolute", left: 0, top: 0}}/>
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
-      <img src={hintSrc} width={windowWidth} height={windowHeight} style={{display: (hintSrc === "/assets/nohint.png") ? "none" : "block", position: "absolute", left: 0, top: 0}}/>
-      <ReactP5Wrapper sketch={sketch} style={{position: "absolute", left: 0, top: 0}} />
-      <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
+      <img src={hintSrc} width={hintM * shadowWidth} height={hintM * shadowHeight} style={{display: (hintSrc === "/assets/nohint.png") ? "none" : "block", position: "absolute", left: hintX, top: hintY}}/>
+      {/*<div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>*/}
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
                    if (playProcess.isGameOver || playProcess.isSuccess) {
