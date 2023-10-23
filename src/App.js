@@ -15,12 +15,12 @@ let hintSrc = "/assets/background.png";
 let shadowWidth = 640, shadowHeight = 480;
 let hintX, hintY, hintM;
 const shadowPicNames = [
-    {path: "/assets/1_introduction.mp4", type: "video"},
-    {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/2_Arch.mp4", type: "video"},
-    {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/3_Seesaw.mp4", type: "video"},
+    {path: "/assets/SYCHRONOCITY_v2.mp4", type: "video"},
+    {path: "/assets/shadow1.png", type: "pic"},{path: "/assets/1to2_v2.mp4", type: "video"},
+    {path: "/assets/shadow2.png", type: "pic"},{path: "/assets/arch2seesaw_v2.mp4", type: "video"},
     {path: "/assets/shadow3.png", type: "pic"}];
-const gameOverVideoPath = "/assets/gameover.m4v";
-const gameSuccessVideoPath = "/assets/4_Colony.mp4";
+const gameOverVideoPath = "/assets/lose_v2.mp4";
+const gameSuccessVideoPath = "/assets/2colony_v2.mp4";
 let timeID;
 
 
