@@ -125,7 +125,7 @@ function App() {
         const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
         const tmpCtx = fitWindowRef.current.getContext("2d");
-        //const drawingUtils = new DrawingUtils(tmpCtx);
+        const drawingUtils = new DrawingUtils(tmpCtx);
 
         const constraints = {
             video: true
@@ -199,9 +199,9 @@ function App() {
 
 
                     let imgData = nearestInterpolation(imageData, shadowWidth, shadowHeight, windowWidth, windowHeight);
-                    hintM = Math.min(windowWidth / shadowWidth, windowHeight / shadowHeight);
-                    hintX = (windowWidth - hintM * shadowWidth) / 2;
-                    hintY = (windowHeight - hintM * shadowHeight) / 2;
+                    // hintM = Math.min(windowWidth / shadowWidth, windowHeight / shadowHeight);
+                    // hintX = (windowWidth - hintM * shadowWidth) / 2;
+                    // hintY = (windowHeight - hintM * shadowHeight) / 2;
                     const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
                     // //console.log(imgData.buffer);
                     const dataNew1 = new ImageData(
@@ -209,6 +209,7 @@ function App() {
                         windowWidth,
                         windowHeight
                     );
+                    tmpCtx.putImageData(dataNew1, 0, 0);
                     // for (const lm of faceLandmark) {
                     //     console.log("lm", lm, lm[0].x, lm[0].y);
                     //     //let mul = lm[3][0] - lm[4][0];
@@ -328,7 +329,7 @@ function App() {
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
       <img src={hintSrc} width={hintM * shadowWidth} height={hintM * shadowHeight} style={{display: (hintSrc === "/assets/nohint.png") ? "none" : "block", position: "absolute", left: hintX, top: hintY}}/>
-      {/*<div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>*/}
+      <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
                    if (playProcess.isGameOver || playProcess.isSuccess) {
