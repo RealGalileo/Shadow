@@ -199,9 +199,9 @@ function App() {
 
 
                     let imgData = nearestInterpolation(imageData, shadowWidth, shadowHeight, windowWidth, windowHeight);
-                    // hintM = Math.min(windowWidth / shadowWidth, windowHeight / shadowHeight);
-                    // hintX = (windowWidth - hintM * shadowWidth) / 2;
-                    // hintY = (windowHeight - hintM * shadowHeight) / 2;
+                    hintM = Math.min(windowWidth / shadowWidth, windowHeight / shadowHeight);
+                    hintX = (windowWidth - hintM * shadowWidth) / 2;
+                    hintY = (windowHeight - hintM * shadowHeight) / 2;
                     const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
                     // //console.log(imgData.buffer);
                     const dataNew1 = new ImageData(
