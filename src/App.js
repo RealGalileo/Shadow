@@ -205,7 +205,7 @@ function App() {
                     const uint8Array1 = new Uint8ClampedArray(imgData.buffer);
                     // //console.log(imgData.buffer);
                     const dataNew1 = new ImageData(
-                        uint8Array1,
+                         uint8Array1,
                         windowWidth,
                         windowHeight
                     );
