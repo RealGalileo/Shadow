@@ -305,17 +305,17 @@ function App() {
     }, [playProcess]);
 
     useEffect(() => {
-        if (playProcess.mainProcess === 1 && similarity >= 0.3 && isPicLoaded === true) {
+        if (playProcess.mainProcess === 1 && similarity >= 0.42 && isPicLoaded === true) {
             clearTimeout(timeID);
             setIsPicLoaded(false);
             setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
         }
-        else if (playProcess.mainProcess === 3 && similarity >= 0.2 && isPicLoaded === true) {
+        else if (playProcess.mainProcess === 3 && similarity >= 0.45 && isPicLoaded === true) {
             clearTimeout(timeID);
             setIsPicLoaded(false);
             setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
         }
-        else if (playProcess.mainProcess === 5 && similarity >= 0.15 && isPicLoaded === true) {
+        else if (playProcess.mainProcess === 5 && similarity >= 0.5 && isPicLoaded === true) {
             clearTimeout(timeID);
             setIsPicLoaded(false);
             setPlayProcess(new ProcessControl(playProcess.mainProcess + 1, 0, 0, 0));
@@ -329,7 +329,7 @@ function App() {
       <canvas ref={canvasRef} className={styles.flip} style={{position: "absolute", left: 0, top: 0}} />
       <canvas ref={fitWindowRef} className={styles.flip} width={windowWidth} height={windowHeight} style={{position: "absolute", left: 0, top: 0}} />
       <img src={hintSrc} width={hintM * shadowWidth} height={hintM * shadowHeight} style={{display: (hintSrc === "/assets/nohint.png") ? "none" : "block", position: "absolute", left: hintX, top: hintY}}/>
-      <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div>
+      {/* <div style={{fontSize:"50px", position: "absolute", left: 0, top: 500}}>similarity: {similarity}</div> */}
       <video src={videoSrc} controls style={{width: windowWidth, height: windowHeight, position: "absolute", left: 0, top: 0, display: videoSrc ? "block" : "none"}} autoPlay
                playsInline onEnded={() => {
                    if (playProcess.isGameOver || playProcess.isSuccess) {
